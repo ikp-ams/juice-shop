@@ -73,10 +73,11 @@ jobs:
         skip-setup-trivy: true
 
     - name: Upload Trivy scan results to GitHub Security tab
-      if: always()
+      continue-on-error: true
       uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: 'trivy-results.sarif'
+        category: trivy-iac
 
 
     # ===================== Container Scanning (trivy) ==============================
@@ -118,13 +119,14 @@ jobs:
         skip-setup-trivy: true
 
     - name: Upload Trivy image scan results to GitHub Security tab
-      if: always()
+      # if: always()
       uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: 'trivy-image-results.sarif'
+        category: trivy-image
     
     - name: Upload Trivy image SARIF as artifact
-      if: always()
+      # if: always()
       uses: actions/upload-artifact@v4
       with:
         name: trivy-image-sarif
@@ -133,8 +135,7 @@ jobs:
 
     # ===================== Push only on push ===================
     - name: Login to Docker Hub
-      continue-on-error: true
-      if: github.event_name == 'push'
+      if: always() && github.event_name == 'push'
       uses: docker/login-action@v3
       with:
         registry: docker.io
@@ -142,8 +143,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Push image (only if scans passed)
-      continue-on-error: true
-      if: github.event_name == 'push'
+      if: success() && github.event_name == 'push'
       uses: docker/build-push-action@v6
       with:
         context: .
